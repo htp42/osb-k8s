@@ -1,0 +1,107 @@
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/component: frontend
+    spec:
+      initContainers:
+        - name: wait-for-api
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z api 5003; do echo waiting for api; sleep 5; done;']
+        - name: wait-for-documentation
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z documentation 5006; do echo waiting for documentation; sleep 5; done;']
+        - name: wait-for-neodash
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z neodash 5007; do echo waiting for neodash; sleep 5; done;']
+      containers:
+        - name: frontend
+          image: saurcode/osb_frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5005
+              protocol: TCP
+          env:
+            # Nginx upstream configuration - required to avoid K8s service env var conflicts
+            - name: API_HOST
+              value: "api"
+            - name: API_PORT
+              value: "5003"
+            - name: CONSUMER_API_HOST
+              value: "consumerapi"
+            - name: CONSUMER_API_PORT
+              value: "5008"
+            - name: DOC_HOST
+              value: "documentation"
+            - name: DOC_PORT
+              value: "5006"
+            - name: NEODASH_HOST
+              value: "neodash"
+            - name: NEODASH_PORT
+              value: "5007"
+            # App configuration
+            - name: pocketbaseBaseUrl
+              value: "http://pocketbase:8090"
+            - name: OAUTH_ENABLED
+              value: "false"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5005
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5005
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 5005
+      targetPort: 5005
+      protocol: TCP
+  selector:
+    app: frontend

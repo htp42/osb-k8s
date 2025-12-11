@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openstudybuilder
+  labels:
+    app.kubernetes.io/name: openstudybuilder
+    app.kubernetes.io/part-of: openstudybuilder

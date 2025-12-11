@@ -1,0 +1,94 @@
+---
+# PocketBase Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pocketbase
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: pocketbase
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # SQLite doesn't support concurrent writes
+  selector:
+    matchLabels:
+      app: pocketbase
+  template:
+    metadata:
+      labels:
+        app: pocketbase
+        app.kubernetes.io/name: pocketbase
+        app.kubernetes.io/component: auth
+    spec:
+      containers:
+        - name: pocketbase
+          image: saurcode/osb_pocketbase:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8090
+              protocol: TCP
+          env:
+            - name: POCKETBASE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: osb-config
+                  key: POCKETBASE_PORT
+            - name: POCKETBASE_CORS_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: osb-config
+                  key: POCKETBASE_CORS_ORIGINS
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: pocketbase-data
+              mountPath: /pb_app/pb_data
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8090
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8090
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: pocketbase-data
+          persistentVolumeClaim:
+            claimName: pocketbase-data-pvc
+---
+# PocketBase Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: pocketbase
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: pocketbase
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8090
+      targetPort: 8090
+      protocol: TCP
+  selector:
+    app: pocketbase

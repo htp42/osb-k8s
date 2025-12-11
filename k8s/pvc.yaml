@@ -1,0 +1,70 @@
+---
+# PersistentVolumeClaim for Neo4j Database
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neo4j-data-pvc
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: neo4j
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # Uncomment and specify storageClassName if needed
+  # storageClassName: standard
+---
+# PersistentVolumeClaim for Neo4j Logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neo4j-logs-pvc
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: neo4j
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# PersistentVolumeClaim for PocketBase Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pocketbase-data-pvc
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: pocketbase
+    app.kubernetes.io/component: auth
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# PersistentVolumeClaim for Neo4j Backups
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neo4j-backup-pvc
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: neo4j-backup
+    app.kubernetes.io/component: backup
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi

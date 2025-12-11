@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: osb-config
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: openstudybuilder
+data:
+  # Neo4j Configuration
+  NEO4J_DSN: "bolt://neo4j:changeme1234@database:7687/mdrdb"
+  NEO4J_BOLT_PORT: "7687"
+  NEO4J_HTTP_PORT: "7474"
+
+  # PocketBase Configuration
+  POCKETBASE_PUBLIC_URL: "http://pocketbase:8090"
+  POCKETBASE_PORT: "8090"
+  POCKETBASE_CORS_ORIGINS: "http://frontend:5005,http://localhost:5005"
+
+  # API Configuration
+  UVICORN_PORT: "5003"
+  UVICORN_ROOT_PATH: "/api"
+  UVICORN_APP: "clinical_mdr_api.main:app"
+  ALLOW_ORIGIN_REGEX: ".*"
+
+  # Consumer API Configuration
+  CONSUMER_API_PORT: "5008"
+  CONSUMER_API_ROOT_PATH: "/consumer-api"
+
+  # OAuth Configuration (disabled by default)
+  OAUTH_ENABLED: "false"
+  OAUTH_RBAC_ENABLED: "false"
+
+  # Frontend Configuration
+  FRONTEND_PORT: "5005"
+  BIND_ADDRESS: "0.0.0.0"
+
+  # Documentation Configuration
+  DOCUMENTATION_PORT: "5006"
+
+  # NeoDash Configuration
+  NEODASH_PORT: "5007"
+
+  # Neo4j Memory Settings
+  NEO4J_server_memory_heap_initial__size: "2G"
+  NEO4J_server_memory_heap_max__size: "2G"
+  NEO4J_server_memory_pagecache_size: "1G"
+  NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+  NEO4J_PLUGINS: "[\"apoc\"]"
+
+  # AWS Region (for backups)
+  AWS_DEFAULT_REGION: "us-east-1"
+  NEO4J_BACKUP_BUCKET: "osb-backup"
+  S3_BUCKET: "osb-backup"

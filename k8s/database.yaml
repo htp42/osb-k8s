@@ -1,0 +1,89 @@
+---
+# Neo4j Database StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: database
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: neo4j
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: openstudybuilder
+spec:
+  serviceName: database
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+        app.kubernetes.io/name: neo4j
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+        - name: neo4j
+          image: saurcode/osb_db:v2.1.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 7474
+              protocol: TCP
+            - name: bolt
+              containerPort: 7687
+              protocol: TCP
+          env:
+            - name: NEO4J_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: osb-secrets
+                  key: NEO4J_AUTH
+            - name: NEO4J_ACCEPT_LICENSE_AGREEMENT
+              value: "yes"
+            - name: NEO4J_server_memory_heap_initial__size
+              value: "512M"
+            - name: NEO4J_server_memory_heap_max__size
+              value: "1G"
+            - name: NEO4J_server_memory_pagecache_size
+              value: "256M"
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "3Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 7474
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 7474
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+  namespace: openstudybuilder
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 7474
+      targetPort: 7474
+    - name: bolt
+      port: 7687
+      targetPort: 7687
+  selector:
+    app: database

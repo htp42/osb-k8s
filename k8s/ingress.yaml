@@ -1,0 +1,168 @@
+---
+# Ingress for OpenStudyBuilder
+# This routes all traffic through the main entry point
+# Similar to how the frontend nginx proxies requests in Docker Compose
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openstudybuilder-ingress
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: openstudybuilder
+    app.kubernetes.io/component: ingress
+  annotations:
+    # Nginx Ingress Controller annotations
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    # Rewrite rules for API paths
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: openstudybuilder.local  # Change to your domain
+      http:
+        paths:
+          # Main frontend - catch-all at the end
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 5005
+          # API route
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api
+                port:
+                  number: 5003
+          # Consumer API route
+          - path: /consumer-api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: consumerapi
+                port:
+                  number: 5008
+          # Documentation route
+          - path: /doc(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: documentation
+                port:
+                  number: 5006
+          # NeoDash route
+          - path: /neodash(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: neodash
+                port:
+                  number: 5007
+          # PocketBase route (for auth)
+          - path: /pb(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: pocketbase
+                port:
+                  number: 8090
+---
+# Alternative simple ingress without path rewrites
+# Use this if you prefer separate subdomains for each service
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openstudybuilder-ingress-subdomains
+  namespace: openstudybuilder
+  labels:
+    app.kubernetes.io/name: openstudybuilder
+    app.kubernetes.io/component: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    # Main frontend
+    - host: app.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 5005
+    # API
+    - host: api.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 5003
+    # Consumer API
+    - host: consumer-api.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: consumerapi
+                port:
+                  number: 5008
+    # Documentation
+    - host: docs.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: documentation
+                port:
+                  number: 5006
+    # NeoDash
+    - host: neodash.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: neodash
+                port:
+                  number: 5007
+    # PocketBase Auth
+    - host: auth.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pocketbase
+                port:
+                  number: 8090
+    # Neo4j Browser (optional - for admin access)
+    - host: neo4j.openstudybuilder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: database
+                port:
+                  number: 7474
